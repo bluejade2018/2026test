@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>고1 아침 공부 인증 챌린지</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome for clean modern icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    input, textarea {
+      user-select: text;
+    }
+    /* Hide scrollbars for slick app look */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex justify-center selection:bg-brand-500 selection:text-white">
+
+  <!-- Mobile Screen Container -->
+  <div id="appContainer" class="w-full max-w-md bg-white min-h-screen flex flex-col shadow-2xl relative pb-20">
+
+    <!-- App Header -->
+    <header class="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-100 px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-xl bg-brand-500 text-white flex items-center justify-center font-bold text-sm shadow-md shadow-brand-500/30">
+          ☀️
+        </div>
+        <div>
+          <h1 class="text-base font-bold text-slate-800 leading-tight">아침 공부 챌린지</h1>
+          <p id="headerSubtitle" class="text-xs text-slate-400">꿈을 향한 아침의 기적</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="gasConfigBtn" title="Google Sheets 연동 설정" class="w-8 h-8 rounded-full bg-slate-50 text-slate-500 flex items-center justify-center hover:bg-slate-100 transition">
+          <i class="fa-solid fa-cloud text-xs"></i>
+        </button>
+        <button id="changeNickBtn" title="닉네임 변경" class="text-xs px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full font-medium transition hidden">
+          변경
+        </button>
+      </div>
+    </header>
+
+    <!-- Screen 1: Login / Nickname Screen (Shown when no nickname is set) -->
+    <section id="nicknameScreen" class="flex-1 flex flex-col justify-center px-6 py-8">
+      <div class="text-center mb-8">
+        <div class="inline-flex p-4 bg-brand-50 text-brand-600 rounded-3xl mb-4 shadow-inner">
+          <i class="fa-solid fa-graduation-cap text-4xl"></i>
+        </div>
+        <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">좋은 아침입니다!</h2>
+        <p class="text-sm text-slate-500 mt-2">오늘도 멋진 하루를 시작해 볼까요?<br>출석을 위해 닉네임(또는 학번과 이름)을 입력해 주세요.</p>
+      </div>
+
+      <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 shadow-sm mb-6">
+        <label for="nicknameInput" class="block text-xs font-semibold text-slate-600 mb-2">닉네임 / 학번 이름</label>
+        <input 
+          type="text" 
+          id="nicknameInput" 
+          maxlength="15" 
+          placeholder="예: 10405 김민우" 
+          class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-slate-800 bg-white text-base transition"
+        >
+        <p class="text-[11px] text-slate-400 mt-2 flex items-center gap-1">
+          <i class="fa-solid fa-circle-info"></i> 같은 닉네임을 계속 사용해야 누적 일수가 연동됩니다.
+        </p>
+      </div>
+
+      <button id="startBtn" class="w-full py-3.5 px-4 bg-brand-600 hover:bg-brand-700 active:scale-[0.98] text-white font-bold rounded-xl shadow-lg shadow-brand-500/25 transition duration-150 flex items-center justify-center gap-2">
+        <span>챌린지 입장하기</span>
+        <i class="fa-solid fa-arrow-right text-xs"></i>
+      </button>
+    </section>
+
+    <!-- Screen 2: Main Dashboard (Shown after nickname entered) -->
+    <section id="mainContent" class="flex-1 flex flex-col hidden">
+
+      <!-- Student Status Card -->
+      <div class="px-4 pt-3 pb-2">
+        <div class="bg-gradient-to-r from-brand-600 to-indigo-600 rounded-2xl p-4 text-white shadow-lg shadow-brand-500/20 flex items-center justify-between">
+          <div>
+            <div class="flex items-center gap-1.5 text-xs text-brand-100 font-medium mb-1">
+              <span>오늘의 도전자</span>
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            </div>
+            <div class="text-lg font-bold flex items-center gap-2">
+              <span id="displayUserNick">-</span>
+              <span class="text-xs bg-white/20 px-2 py-0.5 rounded-md font-normal">1학년</span>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-brand-100 font-medium">누적 공부 일수</div>
+            <div class="text-2xl font-extrabold flex items-baseline justify-end gap-1">
+              <span id="streakCount">0</span>
+              <span class="text-sm font-semibold">일째</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Tab Pills -->
+      <div class="px-4 py-2">
+        <div class="flex p-1 bg-slate-100 rounded-xl">
+          <button id="tabChallengeBtn" class="flex-1 py-2 text-xs font-bold rounded-lg transition-all duration-200 bg-white text-brand-600 shadow-sm flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-pen-nib"></i>
+            <span>나의 챌린지 기록</span>
+          </button>
+          <button id="tabFeedBtn" class="flex-1 py-2 text-xs font-bold rounded-lg transition-all duration-200 text-slate-500 hover:text-slate-700 flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-users"></i>
+            <span>우리 반 피드</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab 1: Personal Challenge View -->
+      <div id="tabChallengeContent" class="flex-1 px-4 py-2 space-y-4">
+        
+        <!-- Registration Form Card -->
+        <div class="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-brand-500"></span>
+              오늘의 아침 인증하기
+            </h3>
+            <span id="todayDateLabel" class="text-xs text-slate-400 font-medium"></span>
+          </div>
+
+          <!-- Goal / Resolution Input -->
+          <div>
+            <label for="resolutionInput" class="block text-xs font-bold text-slate-600 mb-1.5 flex items-center justify-between">
+              <span>오늘 나의 결심</span>
+              <span class="text-[11px] font-normal text-slate-400">한 줄 목표</span>
+            </label>
+            <input 
+              type="text" 
+              id="resolutionInput" 
+              placeholder="예: 7시 반까지 영단어 30개 및 수학 3문제 풀기!" 
+              maxlength="50"
+              class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-800"
+            >
+          </div>
+
+          <!-- Photo Verification Buttons -->
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1.5">
+              공부 사진 인증
+            </label>
+
+            <!-- Hidden Inputs for Files -->
+            <!-- 1. Direct Camera Capture -->
+            <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden">
+            <!-- 2. Regular File/Gallery Picker -->
+            <input type="file" id="galleryInput" accept="image/*" class="hidden">
+
+            <!-- Buttons Grid -->
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" id="triggerCameraBtn" class="flex items-center justify-center gap-2 py-3 px-3 bg-indigo-50 hover:bg-indigo-100 text-brand-600 font-semibold text-xs rounded-xl border border-indigo-200/80 transition active:scale-95">
+                <i class="fa-solid fa-camera text-base"></i>
+                <span>카메라로 촬영</span>
+              </button>
+              <button type="button" id="triggerGalleryBtn" class="flex items-center justify-center gap-2 py-3 px-3 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold text-xs rounded-xl border border-slate-200 transition active:scale-95">
+                <i class="fa-solid fa-image text-base text-slate-500"></i>
+                <span>앨범/파일 등록</span>
+              </button>
+            </div>
+
+            <!-- Photo Preview Area -->
+            <div id="photoPreviewContainer" class="mt-3 relative hidden group">
+              <img id="photoPreview" src="" alt="인증 사진 미리보기" class="w-full h-48 object-cover rounded-xl border border-slate-200 shadow-inner">
+              <button id="removePhotoBtn" class="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs backdrop-blur-sm transition">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+              <div class="absolute bottom-2 left-2 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded backdrop-blur-sm">
+                사진 등록 완료
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button id="submitRecordBtn" class="w-full py-3 bg-brand-600 hover:bg-brand-700 active:scale-[0.99] text-white font-bold text-sm rounded-xl shadow-md shadow-brand-500/20 transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-check"></i>
+            <span>오늘 공부 인증 저장하기</span>
+          </button>
+        </div>
+
+        <!-- My History List -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="text-xs font-bold text-slate-600">나의 지난 기록</h4>
+            <span id="myRecordCount" class="text-[11px] text-slate-400">0건</span>
+          </div>
+
+          <!-- Empty State -->
+          <div id="myEmptyState" class="bg-white rounded-2xl p-8 border border-dashed border-slate-200 text-center text-slate-400">
+            <i class="fa-regular fa-calendar-xmark text-3xl mb-2 text-slate-300"></i>
+            <p class="text-xs font-medium">아직 등록된 인증 기록이 없습니다.</p>
+            <p class="text-[11px] text-slate-400 mt-1">오늘 첫 아침 인증을 시작해보세요!</p>
+          </div>
+
+          <!-- List Container -->
+          <div id="myHistoryList" class="space-y-3"></div>
+        </div>
+
+      </div>
+
+      <!-- Tab 2: Class Feed View -->
+      <div id="tabFeedContent" class="flex-1 px-4 py-2 hidden">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+              <span>우리 반 친구들의 아침</span>
+              <span id="feedTotalCount" class="text-xs font-normal text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full">0명 참여</span>
+            </h3>
+          </div>
+          <button id="refreshFeedBtn" class="text-xs text-slate-500 hover:text-brand-600 flex items-center gap-1 transition">
+            <i class="fa-solid fa-arrows-rotate text-[11px]"></i>
+            <span>새로고침</span>
+          </button>
+        </div>
+
+        <!-- Feed Empty State -->
+        <div id="feedEmptyState" class="bg-white rounded-2xl p-8 border border-dashed border-slate-200 text-center text-slate-400">
+          <i class="fa-solid fa-mug-hot text-3xl mb-2 text-slate-300"></i>
+          <p class="text-xs font-medium">아직 등록된 친구들의 인증이 없습니다.</p>
+          <p class="text-[11px] text-slate-400 mt-1">가장 먼저 아침 인증을 남겨 반 친구들을 깨워보세요!</p>
+        </div>
+
+        <!-- Feed Items Stream -->
+        <div id="classFeedList" class="space-y-4"></div>
+      </div>
+
+    </section>
+
+    <!-- GAS URL Settings & Guide Modal -->
+    <div id="gasModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+      <div class="bg-white rounded-2xl w-full max-w-sm p-5 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-cloud text-brand-500"></i>
+            Google 스프레드시트 연동
+          </h3>
+          <button id="closeGasModalBtn" class="text-slate-400 hover:text-slate-600">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+
+        <p class="text-xs text-slate-500 leading-relaxed">
+          Google Apps Script(GAS)를 웹 앱으로 배포한 후 URL을 입력하시면 모든 학생의 인증 데이터가 구글 스프레드시트에 영구 보관됩니다.
+        </p>
+
+        <div>
+          <label for="gasUrlInput" class="block text-xs font-semibold text-slate-700 mb-1">Web App URL</label>
+          <input 
+            type="url" 
+            id="gasUrlInput" 
+            placeholder="https://script.google.com/macros/s/.../exec"
+            class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+          >
+          <p class="text-[10px] text-slate-400 mt-1">
+            * 비워둘 경우 현재 기기의 로컬 세션에 안전하게 저장됩니다.
+          </p>
+        </div>
+
+        <!-- Gas Code Helper accordion -->
+        <details class="text-[11px] bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+          <summary class="font-semibold text-slate-700 cursor-pointer">
+            📋 Google Apps Script 코드 보기
+          </summary>
+          <div class="mt-2 text-slate-600 font-mono text-[10px] whitespace-pre-wrap overflow-x-auto bg-slate-900 text-slate-200 p-2 rounded-lg">
+function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = JSON.parse(e.postData.contents);
+  if (data.action === "addRecord") {
+    sheet.appendRow([
+      data.id,
+      data.nickname,
+      data.date,
+      data.time,
+      data.resolution,
+      data.photo || "",
+      data.streak
+    ]);
+    return ContentService.createTextOutput(JSON.stringify({status: "success"}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+function doGet() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var rows = sheet.getDataRange().getValues();
+  var records = [];
+  for (var i = 1; i < rows.length; i++) {
+    records.push({
+      id: rows[i][0],
+      nickname: rows[i][1],
+      date: rows[i][2],
+      time: rows[i][3],
+      resolution: rows[i][4],
+      photo: rows[i][5],
+      streak: rows[i][6]
+    });
+  }
+  return ContentService.createTextOutput(JSON.stringify(records))
+    .setMimeType(ContentService.MimeType.JSON);
+}</div>
+        </details>
+
+        <div class="flex gap-2 pt-1">
+          <button id="saveGasUrlBtn" class="flex-1 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition">
+            설정 저장
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification for in-app feedback without alert() -->
+    <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 bg-slate-800/95 text-white text-xs font-medium rounded-full shadow-lg backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300 flex items-center gap-2">
+      <span id="toastIcon">💡</span>
+      <span id="toastMsg">알림 메시지</span>
+    </div>
+
+  </div>
+
+  <script>
+    // ====================================================================
+    // 🔗 Google Apps Script(GAS) Web App 주소 직접 설정 (강의안 4번 위치)
+    // 아래 큰따옴표("") 안에 선생님의 GAS Web App URL(/exec 로 끝나는 주소)을 직접 붙여넣어 주세요!
+    // 예시: const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycb.../exec";
+    // ====================================================================
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzW1g-Rbhkcnjbh_gq1dA9WcW6bQiRtbdJL8WNUUutiphIDFVFW-PiAWH4_K8sMcAI0/exec";
+
+    /* App State Management */
+    const STATE = {
+      currentUser: '',
+      gasUrl: localStorage.getItem('study_gas_url') || GAS_WEB_APP_URL,
+      records: [], // Clean empty initial dataset as requested
+      currentTab: 'challenge', // 'challenge' | 'feed'
+      pendingPhotoBase64: null
+    };
+
+    /* DOM References */
+    const nicknameScreen = document.getElementById('nicknameScreen');
+    const mainContent = document.getElementById('mainContent');
+    const nicknameInput = document.getElementById('nicknameInput');
+    const startBtn = document.getElementById('startBtn');
+    const displayUserNick = document.getElementById('displayUserNick');
+    const streakCount = document.getElementById('streakCount');
+    const changeNickBtn = document.getElementById('changeNickBtn');
+    const todayDateLabel = document.getElementById('todayDateLabel');
+
+    const tabChallengeBtn = document.getElementById('tabChallengeBtn');
+    const tabFeedBtn = document.getElementById('tabFeedBtn');
+    const tabChallengeContent = document.getElementById('tabChallengeContent');
+    const tabFeedContent = document.getElementById('tabFeedContent');
+
+    const resolutionInput = document.getElementById('resolutionInput');
+    const cameraInput = document.getElementById('cameraInput');
+    const galleryInput = document.getElementById('galleryInput');
+    const triggerCameraBtn = document.getElementById('triggerCameraBtn');
+    const triggerGalleryBtn = document.getElementById('triggerGalleryBtn');
+    const photoPreviewContainer = document.getElementById('photoPreviewContainer');
+    const photoPreview = document.getElementById('photoPreview');
+    const removePhotoBtn = document.getElementById('removePhotoBtn');
+    const submitRecordBtn = document.getElementById('submitRecordBtn');
+
+    const myHistoryList = document.getElementById('myHistoryList');
+    const myEmptyState = document.getElementById('myEmptyState');
+    const myRecordCount = document.getElementById('myRecordCount');
+
+    const classFeedList = document.getElementById('classFeedList');
+    const feedEmptyState = document.getElementById('feedEmptyState');
+    const feedTotalCount = document.getElementById('feedTotalCount');
+    const refreshFeedBtn = document.getElementById('refreshFeedBtn');
+
+    const gasModal = document.getElementById('gasModal');
+    const gasConfigBtn = document.getElementById('gasConfigBtn');
+    const closeGasModalBtn = document.getElementById('closeGasModalBtn');
+    const gasUrlInput = document.getElementById('gasUrlInput');
+    const saveGasUrlBtn = document.getElementById('saveGasUrlBtn');
+
+    function showToast(message, icon = '💡') {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastMsg.textContent = message;
+      toastIcon.textContent = icon;
+      toast.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-2');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', 'pointer-events-none', '-translate-y-2');
+      }, 2500);
+    }
+
+    function getFormattedDate(d = new Date()) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}.${month}.${day}`;
+    }
+
+    function getFormattedTime(d = new Date()) {
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      return `${hours}:${minutes}`;
+    }
+
+    /**
+     * Calculates the cumulative study streak for a specific nickname.
+     * Counts unique consecutive or total study dates up to today.
+     */
+    function calculateStreak(nickname) {
+      if (!nickname) return 0;
+      const userRecords = STATE.records.filter(r => r.nickname === nickname);
+      if (userRecords.length === 0) return 0;
+
+      // Extract unique sorted date strings (YYYY.MM.DD)
+      const uniqueDates = Array.from(new Set(userRecords.map(r => r.date))).sort();
+      return uniqueDates.length;
+    }
+
+    /**
+     * Compresses image to avoid exceeding memory or GAS payload limits
+     */
+    function processImageFile(file) {
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        showToast('이미지 파일만 등록할 수 있습니다.', '⚠️');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const maxDim = 800; // Optimal for mobile feeds
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height && width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Quality compressed jpeg
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.72);
+          STATE.pendingPhotoBase64 = compressedDataUrl;
+          photoPreview.src = compressedDataUrl;
+          photoPreviewContainer.classList.remove('hidden');
+          showToast('사진이 등록되었습니다.', '📸');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function loadLocalRecords() {
+      try {
+        const local = localStorage.getItem('study_challenge_records');
+        if (local) {
+          STATE.records = JSON.parse(local);
+        } else {
+          STATE.records = []; // Ensure initial empty state
+        }
+      } catch (e) {
+        STATE.records = [];
+      }
+    }
+
+    function saveLocalRecords() {
+      localStorage.setItem('study_challenge_records', JSON.stringify(STATE.records));
+    }
+
+    // Google Apps Script API sync
+    async function syncWithGas() {
+      if (!STATE.gasUrl) return;
+
+      try {
+        const response = await fetch(STATE.gasUrl, { method: 'GET' });
+        if (response.ok) {
+          const remoteData = await response.json();
+          if (Array.isArray(remoteData)) {
+            STATE.records = remoteData;
+            saveLocalRecords();
+            updateDashboard();
+            renderMyHistory();
+            renderClassFeed();
+          }
+        }
+      } catch (err) {
+        console.warn('GAS Sync failed:', err);
+      }
+    }
+
+    async function postRecordToGas(record) {
+      if (!STATE.gasUrl) return;
+      try {
+        await fetch(STATE.gasUrl, {
+          method: 'POST',
+          mode: 'no-cors', // Standard Google Apps Script redirection handling
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(record)
+        });
+      } catch (e) {
+        console.warn('GAS POST failed:', e);
+      }
+    }
+
+    function updateDashboard() {
+      if (!STATE.currentUser) return;
+      displayUserNick.textContent = STATE.currentUser;
+      const count = calculateStreak(STATE.currentUser);
+      streakCount.textContent = count;
+    }
+
+    function renderMyHistory() {
+      const myRecords = STATE.records
+        .filter(r => r.nickname === STATE.currentUser)
+        .sort((a, b) => new Date(b.date + ' ' + b.time) - new Date(a.date + ' ' + a.time));
+
+      myRecordCount.textContent = `${myRecords.length}건`;
+
+      if (myRecords.length === 0) {
+        myEmptyState.classList.remove('hidden');
+        myHistoryList.innerHTML = '';
+        return;
+      }
+
+      myEmptyState.classList.add('hidden');
+      myHistoryList.innerHTML = myRecords.map(item => `
+        <div class="bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-sm space-y-2 transition hover:border-slate-300">
+          <div class="flex items-center justify-between text-xs text-slate-500">
+            <span class="font-bold text-slate-700">${item.date}</span>
+            <span class="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">${item.time} 인증</span>
+          </div>
+          <div class="text-sm font-semibold text-slate-800">
+            "${item.resolution || '오늘도 집중해서 열공!'}"
+          </div>
+          ${item.photo ? `
+            <div class="rounded-lg overflow-hidden border border-slate-100 mt-2">
+              <img src="${item.photo}" alt="인증샷" class="w-full h-40 object-cover rounded-lg">
+            </div>
+          ` : ''}
+        </div>
+      `).join('');
+    }
+
+    function renderClassFeed() {
+      const feedRecords = [...STATE.records]
+        .sort((a, b) => new Date(b.date + ' ' + b.time) - new Date(a.date + ' ' + a.time));
+
+      const uniqueStudents = new Set(feedRecords.map(r => r.nickname));
+      feedTotalCount.textContent = `${uniqueStudents.size}명 참여`;
+
+      if (feedRecords.length === 0) {
+        feedEmptyState.classList.remove('hidden');
+        classFeedList.innerHTML = '';
+        return;
+      }
+
+      feedEmptyState.classList.add('hidden');
+      classFeedList.innerHTML = feedRecords.map(item => `
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold text-xs">
+                ${item.nickname.slice(0, 1)}
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-800">${item.nickname}</div>
+                <div class="text-[10px] text-slate-400">${item.date} · ${item.time}</div>
+              </div>
+            </div>
+            <span class="text-[11px] font-bold text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full">
+              🔥 ${item.streak || 1}일째
+            </span>
+          </div>
+
+          <div class="text-xs text-slate-700 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+            <span class="text-brand-500 font-bold mr-1">결심:</span>
+            ${item.resolution || '아침 자습 파이팅!'}
+          </div>
+
+          ${item.photo ? `
+            <div class="rounded-xl overflow-hidden border border-slate-100 shadow-inner">
+              <img src="${item.photo}" alt="인증샷" class="w-full max-h-64 object-cover" loading="lazy">
+            </div>
+          ` : ''}
+
+          <div class="pt-1 flex items-center justify-between text-xs text-slate-400">
+            <button onclick="toggleCheer(this)" class="flex items-center gap-1.5 text-slate-500 hover:text-rose-500 transition active:scale-90">
+              <i class="fa-regular fa-heart text-sm"></i>
+              <span>응원해요</span>
+            </button>
+            <span class="text-[10px]">고1 아침 챌린지</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Little cheer button interactive feedback
+    window.toggleCheer = function(btn) {
+      const icon = btn.querySelector('i');
+      if (icon.classList.contains('fa-regular')) {
+        icon.classList.remove('fa-regular');
+        icon.classList.add('fa-solid', 'text-rose-500');
+        showToast('친구에게 응원을 보냈습니다! 👏', '💖');
+      } else {
+        icon.classList.remove('fa-solid', 'text-rose-500');
+        icon.classList.add('fa-regular');
+      }
+    };
+
+    // Entry / Nickname Registration
+    startBtn.addEventListener('click', () => {
+      const val = nicknameInput.value.trim();
+      if (!val) {
+        showToast('닉네임 또는 학번 이름을 입력해 주세요.', '✍️');
+        nicknameInput.focus();
+        return;
+      }
+
+      STATE.currentUser = val;
+      localStorage.setItem('study_current_user', val);
+
+      nicknameScreen.classList.add('hidden');
+      mainContent.classList.remove('hidden');
+      changeNickBtn.classList.remove('hidden');
+
+      updateDashboard();
+      renderMyHistory();
+      renderClassFeed();
+      showToast(`${val}님 환영합니다! 오늘 하루도 파이팅!`, '🌟');
+    });
+
+    // Press Enter to start
+    nicknameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') startBtn.click();
+    });
+
+    // Nickname Change
+    changeNickBtn.addEventListener('click', () => {
+      mainContent.classList.add('hidden');
+      nicknameScreen.classList.remove('hidden');
+      changeNickBtn.classList.add('hidden');
+      nicknameInput.value = STATE.currentUser;
+      nicknameInput.focus();
+    });
+
+    // Tab Switching
+    tabChallengeBtn.addEventListener('click', () => {
+      STATE.currentTab = 'challenge';
+      tabChallengeBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg transition-all duration-200 bg-white text-brand-600 shadow-sm flex items-center justify-center gap-1.5";
+      tabFeedBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg transition-all duration-200 text-slate-500 hover:text-slate-700 flex items-center justify-center gap-1.5";
+      tabChallengeContent.classList.remove('hidden');
+      tabFeedContent.classList.add('hidden');
+    });
+
+    tabFeedBtn.addEventListener('click', () => {
+      STATE.currentTab = 'feed';
+      tabFeedBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg transition-all duration-200 bg-white text-brand-600 shadow-sm flex items-center justify-center gap-1.5";
+      tabChallengeBtn.className = "flex-1 py-2 text-xs font-bold rounded-lg transition-all duration-200 text-slate-500 hover:text-slate-700 flex items-center justify-center gap-1.5";
+      tabFeedContent.classList.remove('hidden');
+      tabChallengeContent.classList.add('hidden');
+      renderClassFeed();
+    });
+
+    // Camera and File triggers
+    triggerCameraBtn.addEventListener('click', () => cameraInput.click());
+    triggerGalleryBtn.addEventListener('click', () => galleryInput.click());
+
+    cameraInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        processImageFile(e.target.files[0]);
+      }
+    });
+
+    galleryInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        processImageFile(e.target.files[0]);
+      }
+    });
+
+    removePhotoBtn.addEventListener('click', () => {
+      STATE.pendingPhotoBase64 = null;
+      photoPreview.src = '';
+      photoPreviewContainer.classList.add('hidden');
+      cameraInput.value = '';
+      galleryInput.value = '';
+      showToast('사진이 취소되었습니다.');
+    });
+
+    // Submit Verification Record
+    submitRecordBtn.addEventListener('click', async () => {
+      const resolution = resolutionInput.value.trim();
+      const photo = STATE.pendingPhotoBase64;
+
+      if (!resolution && !photo) {
+        showToast('오늘의 결심이나 인증 사진 중 하나는 등록해주세요.', '⚠️');
+        return;
+      }
+
+      submitRecordBtn.disabled = true;
+      submitRecordBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>저장 중...</span>`;
+
+      const now = new Date();
+      const todayStr = getFormattedDate(now);
+      const timeStr = getFormattedTime(now);
+
+      // Calculate new streak count
+      const currentStreak = calculateStreak(STATE.currentUser);
+      const hasTodayRecorded = STATE.records.some(r => r.nickname === STATE.currentUser && r.date === todayStr);
+      const newStreak = hasTodayRecorded ? currentStreak : currentStreak + 1;
+
+      const newRecord = {
+        id: 'rec_' + Date.now(),
+        nickname: STATE.currentUser,
+        date: todayStr,
+        time: timeStr,
+        resolution: resolution || '아침 자습 성실하게 완료!',
+        photo: photo || '',
+        streak: newStreak
+      };
+
+      // Add to local state
+      STATE.records.unshift(newRecord);
+      saveLocalRecords();
+
+      // Post to Google Apps Script if configured
+      await postRecordToGas(newRecord);
+
+      // Reset Form
+      resolutionInput.value = '';
+      STATE.pendingPhotoBase64 = null;
+      photoPreview.src = '';
+      photoPreviewContainer.classList.add('hidden');
+      cameraInput.value = '';
+      galleryInput.value = '';
+
+      // Update UI
+      updateDashboard();
+      renderMyHistory();
+      renderClassFeed();
+
+      submitRecordBtn.disabled = false;
+      submitRecordBtn.innerHTML = `<i class="fa-solid fa-check"></i> <span>오늘 공부 인증 저장하기</span>`;
+
+      showToast(`오늘의 아침 인증 완료! (${newStreak}일째)`, '🎉');
+    });
+
+    // Feed Refresh Button
+    refreshFeedBtn.addEventListener('click', async () => {
+      refreshFeedBtn.querySelector('i').classList.add('fa-spin');
+      if (STATE.gasUrl) {
+        await syncWithGas();
+      } else {
+        loadLocalRecords();
+      }
+      renderClassFeed();
+      setTimeout(() => {
+        refreshFeedBtn.querySelector('i').classList.remove('fa-spin');
+        showToast('피드를 새로고침했습니다.', '🔄');
+      }, 500);
+    });
+
+    // Google Apps Script Modal Controls
+    gasConfigBtn.addEventListener('click', () => {
+      gasUrlInput.value = STATE.gasUrl;
+      gasModal.classList.remove('hidden');
+    });
+
+    closeGasModalBtn.addEventListener('click', () => {
+      gasModal.classList.add('hidden');
+    });
+
+    saveGasUrlBtn.addEventListener('click', () => {
+      const url = gasUrlInput.value.trim();
+      STATE.gasUrl = url;
+      localStorage.setItem('study_gas_url', url);
+      gasModal.classList.add('hidden');
+      showToast('스프레드시트 연동 설정이 저장되었습니다.', '☁️');
+      if (url) {
+        syncWithGas();
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      // Set Today's Date Label
+      const now = new Date();
+      const options = { month: 'long', day: 'numeric', weekday: 'short' };
+      todayDateLabel.textContent = now.toLocaleDateString('ko-KR', options);
+
+      // Load existing records (starting clean without fake mock data)
+      loadLocalRecords();
+
+      // Auto-restore user if previously entered
+      const savedUser = localStorage.getItem('study_current_user');
+      if (savedUser) {
+        STATE.currentUser = savedUser;
+        nicknameScreen.classList.add('hidden');
+        mainContent.classList.remove('hidden');
+        changeNickBtn.classList.remove('hidden');
+        updateDashboard();
+        renderMyHistory();
+        renderClassFeed();
+      } else {
+        nicknameScreen.classList.remove('hidden');
+        mainContent.classList.add('hidden');
+        nicknameInput.focus();
+      }
+
+      // Initial GAS Sync if URL is present
+      if (STATE.gasUrl) {
+        syncWithGas();
+      }
+    });
+  </script>
+</body>
+</html>
